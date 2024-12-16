@@ -1,18 +1,9 @@
 {
-  "name": "reactjs-vite-tailwindcss-boilerplate",
-  "description": "This is a boilerplate build with Vite, React 18, TypeScript, Vitest, Testing Library, TailwindCSS 3, Eslint and Prettier.",
+  "name": "sprinter-poc",
+  "description": "Sprinter PoC",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "author": {
-    "name": "João Paulo Moraes",
-    "email": "joaopaulomoraes@outlook.com",
-    "url": "https://github.com/joaopaulomoraes"
-  },
-  "bugs": {
-    "url": "https://github.com/joaopaulomoraes/reactjs-vite-tailwindcss-boilerplate/issues",
-    "email": "joaopaulomoraes@outlook.com"
-  },
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
@@ -25,33 +16,47 @@
   "dependencies": {
     "@chainsafe/sprinter-react": "^1.1.2",
     "@chainsafe/sprinter-sdk": "^1.1.2",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "@radix-ui/react-slot": "^1.1.1",
+    "@reown/appkit": "^1.6.0",
+    "@reown/appkit-adapter-wagmi": "^1.6.0",
+    "@tanstack/react-query": "^5.62.7",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.468.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tailwind-merge": "^2.5.5",
+    "tailwindcss-animate": "^1.0.7",
+    "typescript-eslint": "^8.18.0",
+    "viem": "^2.21.55",
+    "wagmi": "^2.14.1"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.3",
-    "@testing-library/react": "^14.3.1",
-    "@types/node": "^20.17.9",
-    "@types/react": "^18.3.14",
-    "@types/react-dom": "^18.3.2",
-    "@typescript-eslint/eslint-plugin": "^6.21.0",
-    "@typescript-eslint/parser": "^6.21.0",
+    "@testing-library/react": "^16.1.0",
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.0.1",
+    "@types/react-dom": "^19.0.2",
+    "@typescript-eslint/eslint-plugin": "^8.18.0",
+    "@typescript-eslint/parser": "^8.18.0",
     "@vitejs/plugin-react-swc": "^3.7.2",
-    "@vitest/ui": "^1.6.0",
+    "@vitest/ui": "^2.1.8",
     "autoprefixer": "^10.4.20",
-    "eslint": "^8.57.1",
+    "eslint": "^9.17.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.2.1",
     "eslint-plugin-react": "^7.37.2",
-    "eslint-plugin-react-hooks": "^4.6.2",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "eslint-plugin-react-refresh": "^0.4.16",
     "eslint-plugin-tailwindcss": "^3.17.5",
+    "eslint-plugin-testing-library": "^7.1.1",
     "happy-dom": "^15.11.7",
     "postcss": "^8.4.49",
-    "prettier": "3.1.1",
+    "prettier": "3.4.2",
     "tailwindcss": "^3.4.16",
     "typescript": "^5.7.2",
-    "vite": "^5.4.11",
-    "vite-tsconfig-paths": "^4.3.2",
-    "vitest": "^1.6.0"
+    "vite": "^6.0.3",
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^2.1.8"
   }
 }
