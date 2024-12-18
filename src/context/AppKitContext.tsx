@@ -14,8 +14,8 @@ const projectId = 'b079b456fc21a5a1ff63574425469cd1'
 // 2. Create a metadata object - optional
 const metadata = {
   name: 'Sprinter PoC',
-  description: 'AppKit Example',
-  url: 'https://reown.com/appkit', // origin must match your domain & subdomain
+  description: 'Example app for Sprinter SDK and Sprinter React hooks',
+  url: 'https://docs.sprinter.buildwithsygma.com/', // origin must match your domain & subdomain
   icons: ['https://assets.reown.com/reown-profile-pic.png']
 }
 
@@ -32,6 +32,7 @@ const wagmiAdapter = new WagmiAdapter({
 // 5. Create modal
 createAppKit({
   adapters: [wagmiAdapter],
+  // @ts-expect-error see github https://github.com/reown-com/appkit/issues/3486
   networks,
   projectId,
   metadata,

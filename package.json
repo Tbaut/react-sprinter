@@ -16,7 +16,9 @@
   "dependencies": {
     "@chainsafe/sprinter-react": "^1.1.2",
     "@chainsafe/sprinter-sdk": "^1.1.2",
+    "@radix-ui/react-dialog": "^1.1.4",
     "@radix-ui/react-slot": "^1.1.1",
+    "@radix-ui/react-visually-hidden": "^1.1.1",
     "@reown/appkit": "^1.6.0",
     "@reown/appkit-adapter-wagmi": "^1.6.0",
     "@tanstack/react-query": "^5.62.7",
@@ -58,5 +60,6 @@
     "vite": "^6.0.3",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^2.1.8"
-  }
+  },
+  "packageManager": "pnpm@9.15.0+sha512.76e2379760a4328ec4415815bcd6628dee727af3779aaa4c914e3944156c4299921a89f976381ee107d41f12cfa4b66681ca9c718f0668fa0831ed4c6d8ba56c"
 }
