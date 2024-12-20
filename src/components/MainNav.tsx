@@ -22,7 +22,7 @@ export default function MainNav() {
           disabled={status === 'connecting'}
           onClick={openAppKitModal}
         >
-          Connect
+          Connect wallet
         </Button>
       )}
       {status === 'connected' && address && (
