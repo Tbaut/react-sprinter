@@ -8,8 +8,10 @@ function App() {
   return (
     <AppKitProvider>
       <SprinterContext baseUrl={Environment.TESTNET}>
-        <Header />
-        <Content />
+        <div className="h-screen bg-radial-gradient bg-right-bottom bg-no-repeat">
+          <Header />
+          <Content />
+        </div>
       </SprinterContext>
     </AppKitProvider>
   )

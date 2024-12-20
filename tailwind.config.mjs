@@ -1,9 +1,14 @@
 /** @type {import('tailwindcss').Config} */
+
 module.exports = {
   darkMode: ['class'],
   content: ['./index.html', './src/**/*.{ts,tsx,js,jsx}'],
   theme: {
     extend: {
+      backgroundImage: {
+        'radial-gradient':
+          'url("/public/background-star.svg"), radial-gradient(farthest-corner at 90% 100%, rgba(253,42,14,0.3) 0%, rgba(253,186,92,0.3) 20%, rgba(255,219,200,0.3) 100%)'
+      },
       borderRadius: {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
