@@ -4,8 +4,6 @@ import logo from '@/assets/sprint-logo.svg'
 import { useCallback } from 'react'
 import { AddressButton } from './AddressButton'
 
-// const mainNavItems = ['A', 'B', 'C']
-
 export default function MainNav() {
   const { open } = useAppKit()
   const { address, status } = useAppKitAccount()
@@ -16,12 +14,7 @@ export default function MainNav() {
 
   return (
     <div className="hidden w-full gap-2 px-11 md:flex">
-      <img src={logo} alt="logo" />
-      {/* {mainNavItems.map((item, index) => (
-        <Button key={index} variant="link">
-          {item}
-        </Button>
-      ))} */}
+      <img src={logo} alt="sprinter-logo" />
       <div className="flex-1" />
       {['disconnected', 'connecting'].includes(status ?? '') && (
         <Button

@@ -1,12 +1,26 @@
-import { useAppKitAccount } from '@reown/appkit/react'
+import { useAppKitWallet } from '@reown/appkit-wallet-button/react'
+import { Button } from './components/ui/button'
 
 export const Content = () => {
-  const { address, status } = useAppKitAccount()
+  const { isReady, isPending, connect } = useAppKitWallet({
+    onSuccess() {
+      // ...
+    },
+    onError(error) {
+      console.error(error)
+      // ...
+    }
+  })
 
   return (
     <div className="m-4">
-      <div>account: {address}</div>
-      <div>status: {status}</div>
+      <Button
+        onClick={() => {
+          connect('metamask').catch(console.error)
+        }}
+      >
+        Connect MM
+      </Button>
     </div>
   )
 }
