@@ -1,7 +1,12 @@
 import { createAppKit } from '@reown/appkit/react'
 
 import { WagmiProvider } from 'wagmi'
-import { sepolia, b3Sepolia, baseSepolia } from '@reown/appkit/networks'
+import {
+  sepolia,
+  b3Sepolia,
+  baseSepolia,
+  AppKitNetwork
+} from '@reown/appkit/networks'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi'
 
@@ -20,7 +25,10 @@ const metadata = {
 }
 
 // 3. Set the networks
-const networks = [sepolia, b3Sepolia, baseSepolia]
+const networks = [sepolia, b3Sepolia, baseSepolia] as [
+  AppKitNetwork,
+  ...AppKitNetwork[]
+]
 
 // 4. Create Wagmi Adapter
 const wagmiAdapter = new WagmiAdapter({
@@ -32,7 +40,6 @@ const wagmiAdapter = new WagmiAdapter({
 // 5. Create modal
 createAppKit({
   adapters: [wagmiAdapter],
-  // @ts-expect-error see github https://github.com/reown-com/appkit/issues/3486
   networks,
   projectId,
   metadata,
