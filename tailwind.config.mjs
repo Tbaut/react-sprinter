@@ -7,7 +7,9 @@ module.exports = {
     extend: {
       backgroundImage: {
         'radial-gradient':
-          'url("/public/background-star.svg"), radial-gradient(farthest-corner at 90% 100%, rgba(253,42,14,0.3) 0%, rgba(253,186,92,0.3) 20%, rgba(255,219,200,0.3) 100%)'
+          'url("/background-star.svg"), radial-gradient(farthest-corner at 90% 100%, rgba(253,42,14,0.3) 0%, rgba(253,186,92,0.3) 20%, rgba(255,219,200,0.3) 100%)',
+        'separator-gradient':
+          'radial-gradient(circle, rgba(255,219,200,0.3) 0%, rgba(253,186,92,0.3) 50%, rgba(255,219,200,1) 100%);'
       },
       borderRadius: {
         lg: 'var(--radius)',
