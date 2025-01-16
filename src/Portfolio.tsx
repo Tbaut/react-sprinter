@@ -1,39 +1,69 @@
 import {
   useSprinterBalances,
-  useSprinterChains,
-  useSprinterTokens
+  useSprinterChains
 } from '@chainsafe/sprinter-react'
 import { useAppKitAccount } from '@reown/appkit/react'
-import { useEffect, useMemo } from 'react'
-import { Button } from './components/ui/button'
+import { useEffect, useMemo, useState } from 'react'
+import { Button } from '@/components/ui/button'
 import { formatBalance } from './utils'
 import arrow from './assets/arrow.svg'
 import sweep from './assets/sweep.svg'
+import { SweepModal } from '@/components/SweepModal'
+import { useTokens } from '@/hooks/useTokens'
+import { Chain } from '@chainsafe/sprinter-sdk'
+
+export type StructuredTokenData = Record<
+  string,
+  {
+    name: string
+    symbol: string
+    decimals: number
+    logoURI: string
+    total: string
+    chainBalances?: { chain: Chain; balance: string }[]
+  }
+>
 
 export const Portofolio = () => {
+  const [sweepModalOpen, setSweepModalOpen] = useState(false)
+  const [tokenToSweep, setTokenToSweep] = useState('')
   const { address } = useAppKitAccount()
-  const { tokens: uncompleteTokens, getAvailableTokens } = useSprinterTokens()
   const { chains, getAvailableChains } = useSprinterChains()
-
+  const { error, isLoading, tokens } = useTokens()
   // @ts-expect-error address is defined
   const { balances, getUserBalances } = useSprinterBalances(address ?? '')
-  const tokens = useMemo(() => {
-    return {
-      ...uncompleteTokens,
-      data: uncompleteTokens.data?.concat({
-        addresses: [],
-        decimals: 18,
-        name: 'ethereum',
-        symbol: 'ETH',
-        logoURI: 'https://scan.buildwithsygma.com/assets/icons/evm.svg'
+  const structuredTokenData = useMemo(() => {
+    const structuredRes: StructuredTokenData = {}
+
+    Object.entries(balances.data ?? {}).forEach(([tokenId, balance]) => {
+      const token = tokens.find((t) => t.symbol === tokenId)
+      if (!token) return
+      structuredRes[tokenId] = {
+        ...token,
+        total: balance.total,
+        chainBalances: []
+      }
+
+      balance.balances.forEach((eachBalance) => {
+        if (eachBalance.balance === '0') return
+
+        const relevantChains = chains.data?.filter(
+          (chain) => chain.chainID === eachBalance.chainId
+        )
+
+        relevantChains?.forEach((chain) => {
+          structuredRes[tokenId].chainBalances?.push({
+            chain,
+            balance: eachBalance.balance
+          })
+        })
       })
-    }
-  }, [uncompleteTokens])
+    })
 
-  useEffect(() => {
-    getAvailableTokens() // Fetch tokens on component mount
-  }, [getAvailableTokens])
+    return structuredRes
+  }, [balances.data, chains.data, tokens])
 
+  console.log('structuredTokenData', structuredTokenData)
   useEffect(() => {
     getAvailableChains()
   }, [getAvailableChains])
@@ -42,8 +72,8 @@ export const Portofolio = () => {
     getUserBalances()
   }, [getUserBalances])
 
-  if (tokens.loading) return <div>Loading tokens...</div>
-  if (tokens.error) return <div>Error: {tokens.error}</div>
+  if (isLoading) return <div>Loading tokens...</div>
+  if (error) return <div>Error: {error}</div>
 
   return (
     <div className="mt-12 w-full px-48">
@@ -62,50 +92,59 @@ export const Portofolio = () => {
           Distribution <img src={arrow} />
         </div>
         <div />
-        {Object.entries(balances.data ?? {}).map(([tokenId, balance]) => {
-          const token = tokens.data?.find((t) => t.symbol === tokenId)
-          if (!token) return
-
-          return (
-            <div
-              key={tokenId}
-              className="col-span-4 grid grid-cols-subgrid gap-4"
-            >
-              <div className="flex h-12 items-center">
-                <img
-                  className="mr-2 w-6"
-                  src={token.logoURI}
-                  alt={token.symbol}
-                />
-                {token.symbol}
+        {Object.entries(structuredTokenData).map(
+          ([tokenId, { symbol, decimals, logoURI, chainBalances, total }]) => {
+            return (
+              <div
+                key={tokenId}
+                className="col-span-4 grid grid-cols-subgrid gap-4"
+              >
+                <div className="flex h-12 items-center">
+                  <img className="mr-2 w-6" src={logoURI} alt={symbol} />
+                  {symbol}
+                </div>
+                <div className="flex items-center">
+                  {formatBalance(total, decimals)} {symbol}
+                </div>
+                <div className="flex items-center">
+                  {(chainBalances ?? []).map((chainBalance) => {
+                    return (
+                      <img
+                        key={chainBalance.chain.chainID}
+                        className="-ml-2 w-6"
+                        src={chainBalance.chain.logoURI}
+                        alt={chainBalance.chain.name}
+                      />
+                    )
+                  })}
+                </div>
+                <div className="flex items-center">
+                  {total !== '0' && (
+                    <Button
+                      variant={'outline'}
+                      onClick={() => {
+                        setSweepModalOpen(true)
+                        setTokenToSweep(tokenId)
+                      }}
+                    >
+                      <img src={sweep} /> Sweep
+                    </Button>
+                  )}
+                </div>
               </div>
-              <div className="flex items-center">
-                {formatBalance(balance.total, token.decimals)} {token.symbol}
-              </div>
-              <div className="flex items-center">
-                {balance.balances.map((b) => {
-                  const relevantChains = chains.data?.filter(
-                    (c) => c.chainID === b.chainId
-                  )
-                  return relevantChains?.map(({ logoURI }) => (
-                    <img
-                      key={b.chainId}
-                      className="-ml-2 w-6"
-                      src={logoURI}
-                      alt={token.symbol}
-                    />
-                  ))
-                })}
-              </div>
-              <div className="flex items-center">
-                <Button variant={'outline'}>
-                  <img src={sweep} /> Sweep
-                </Button>
-              </div>
-            </div>
-          )
-        })}
+            )
+          }
+        )}
       </div>
+      <SweepModal
+        open={sweepModalOpen}
+        onOpenChange={(open) => {
+          setSweepModalOpen(open)
+          if (!open) setTokenToSweep('')
+        }}
+        tokenId={tokenToSweep}
+        structuredTokenData={structuredTokenData}
+      />
     </div>
   )
 }
