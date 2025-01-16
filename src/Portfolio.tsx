@@ -11,6 +11,12 @@ import sweep from './assets/sweep.svg'
 import { SweepModal } from '@/components/SweepModal'
 import { useTokens } from '@/hooks/useTokens'
 import { Chain } from '@chainsafe/sprinter-sdk'
+import { Chains } from './components/Chains'
+
+export type ChainBalance = {
+  chain: Chain
+  balance: string
+}
 
 export type StructuredTokenData = Record<
   string,
@@ -20,7 +26,7 @@ export type StructuredTokenData = Record<
     decimals: number
     logoURI: string
     total: string
-    chainBalances?: { chain: Chain; balance: string }[]
+    chainBalances?: ChainBalance[]
   }
 >
 
@@ -106,18 +112,9 @@ export const Portofolio = () => {
                 <div className="flex items-center">
                   {formatBalance(total, decimals)} {symbol}
                 </div>
-                <div className="flex items-center">
-                  {(chainBalances ?? []).map((chainBalance) => {
-                    return (
-                      <img
-                        key={chainBalance.chain.chainID}
-                        className="-ml-2 w-6"
-                        src={chainBalance.chain.logoURI}
-                        alt={chainBalance.chain.name}
-                      />
-                    )
-                  })}
-                </div>
+                {(chainBalances ?? []).length > 0 && (
+                  <Chains chainBalances={chainBalances} />
+                )}
                 <div className="flex items-center">
                   {total !== '0' && (
                     <Button
