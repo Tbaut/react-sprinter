@@ -112,8 +112,12 @@ export const Portofolio = () => {
                 <div className="flex items-center">
                   {formatBalance(total, decimals)} {symbol}
                 </div>
-                {(chainBalances ?? []).length > 0 && (
-                  <Chains chainBalances={chainBalances} />
+                {chainBalances && chainBalances.length > 0 && (
+                  <Chains
+                    chainBalances={chainBalances}
+                    tokenSymbol={symbol}
+                    tokenDecimals={decimals}
+                  />
                 )}
                 <div className="flex items-center">
                   {total !== '0' && (
