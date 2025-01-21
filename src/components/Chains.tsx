@@ -1,23 +1,24 @@
-import { ChainBalance } from '@/Portfolio'
 import {
   HoverCard,
   HoverCardContent,
   HoverCardTrigger
 } from '@/components/ui/hover-card'
+import { useChainTokens } from '@/context/ChainTokensContext'
 import { formatBalance } from '@/utils'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 
 type Params = {
-  chainBalances: ChainBalance[]
-  tokenSymbol: string
-  tokenDecimals: number
+  tokenId: string
 }
-export const Chains = ({
-  chainBalances,
-  tokenDecimals,
-  tokenSymbol
-}: Params) => {
+export const Chains = ({ tokenId }: Params) => {
   const [isPopoverOpen, setPopoverOpen] = useState(false)
+  const { structuredTokenData } = useChainTokens()
+  const chainBalances = useMemo(
+    () => structuredTokenData[tokenId].chainBalances ?? [],
+    [structuredTokenData, tokenId]
+  )
+  const tokenDecimals = useMemo(() => structuredTokenData[tokenId].decimals, [])
+  const tokenSymbol = useMemo(() => structuredTokenData[tokenId].symbol, [])
 
   return (
     <div className="flex items-center">
@@ -58,12 +59,12 @@ export const Chains = ({
               )
             })}
           </HoverCardContent>
-          <div className="flex items-center">
+          <div className="flex items-center pl-2">
             {(chainBalances ?? []).map((chainBalance) => {
               return (
                 <img
                   key={chainBalance.chain.chainID}
-                  className="-ml-2 w-6 cursor-pointer"
+                  className="-ml-2 w-6 min-w-6 cursor-pointer"
                   src={chainBalance.chain.logoURI}
                   alt={chainBalance.chain.name}
                 />

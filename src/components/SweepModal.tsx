@@ -1,16 +1,9 @@
-import {
-  DialogHeader,
-  Dialog,
-  DialogTrigger,
-  DialogContent,
-  DialogTitle,
-  DialogDescription
-} from './ui/dialog'
+import { DialogHeader, Dialog, DialogContent, DialogTitle } from './ui/dialog'
 
 import sweep from '../assets/sweep.svg'
 import { useTokens } from '@/hooks/useTokens'
 import { useEffect, useMemo, useState } from 'react'
-import { StructuredTokenData } from '@/Portfolio'
+import { StructuredTokenData } from '@/context/ChainTokensContext'
 
 type Props = {
   onOpenChange: (open: boolean) => void
