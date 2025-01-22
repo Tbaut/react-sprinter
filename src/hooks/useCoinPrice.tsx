@@ -36,7 +36,7 @@ export const useCoinPrice = () => {
         setPrices(data)
       })
       .catch(console.error)
-  }, [])
+  }, [fetchCoinPrice])
 
   return { prices }
 }

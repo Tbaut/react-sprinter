@@ -13,6 +13,7 @@ import { Solution } from '@chainsafe/sprinter-sdk'
 import { parseUnits } from 'viem'
 import { SendContent } from './SendContent'
 import { isSupportedToken, useCoinPrice } from '@/hooks/useCoinPrice'
+import { ElementSelect } from '../ElementSelect'
 
 type Props = {
   onOpenChange: (open: boolean) => void
@@ -20,8 +21,11 @@ type Props = {
 }
 
 export const SendModal = ({ onOpenChange, open }: Props) => {
-  const { structuredTokenData } = useChainTokens()
+  const { structuredTokenData, chains } = useChainTokens()
   const [selectedToken, setSelectedToken] = useState('')
+  const [selectedDestinationChain, setSelectedDestinationChain] = useState<
+    string | undefined
+  >()
   const [amount, setAmount] = useState('')
   const {
     getPoolAssetOnDestination,
@@ -47,8 +51,6 @@ export const SendModal = ({ onOpenChange, open }: Props) => {
     return (amountNumber * roundedPrice).toFixed(2)
   }, [amount, prices, selectedToken])
 
-  console.log('solutionData', solutionData)
-
   const possibleSendingTokens = useMemo(
     () => Object.keys(structuredTokenData),
     [structuredTokenData]
@@ -64,6 +66,10 @@ export const SendModal = ({ onOpenChange, open }: Props) => {
       if (!firstWithBalance) return
 
       setSelectedToken(firstWithBalance[0])
+
+      setSelectedDestinationChain(
+        firstWithBalance[1]?.chainBalances?.[0].chain.chainID.toString()
+      )
     }
   }, [possibleSendingTokens, selectedToken, structuredTokenData])
 
@@ -78,7 +84,11 @@ export const SendModal = ({ onOpenChange, open }: Props) => {
   }, [selectedToken, structuredTokenData])
 
   const onGetQuote = useCallback(() => {
-    if (!address || !structuredTokenData[selectedToken].chainBalances?.[0])
+    if (
+      !address ||
+      !structuredTokenData[selectedToken].chainBalances?.[0] ||
+      !selectedDestinationChain
+    )
       return
 
     setRequestedQuotes(true)
@@ -90,8 +100,7 @@ export const SendModal = ({ onOpenChange, open }: Props) => {
     )
     getPoolAssetOnDestination({
       account: address,
-      destinationChain:
-        structuredTokenData[selectedToken].chainBalances[0].chain.chainID,
+      destinationChain: Number(selectedDestinationChain),
       amount: gweiAmount,
       token: selectedToken
     })
@@ -99,6 +108,7 @@ export const SendModal = ({ onOpenChange, open }: Props) => {
     address,
     amount,
     getPoolAssetOnDestination,
+    selectedDestinationChain,
     selectedToken,
     structuredTokenData
   ])
@@ -134,40 +144,23 @@ export const SendModal = ({ onOpenChange, open }: Props) => {
               <div className="pt-6 text-sm">Token</div>
               <div className="grid grid-cols-4 gap-4">
                 {possibleSendingTokens.map((token) => (
-                  <div
+                  <ElementSelect
                     key={token}
-                    className={`flex cursor-pointer items-center rounded-xl border border-slate-300 px-2 py-1.5 outline-none transition-colors ${
-                      selectedToken === token
-                        ? 'border-blue-500 bg-blue-100'
-                        : 'bg-white'
-                    } ${
-                      structuredTokenData[token].total === '0'
-                        ? 'pointer-events-none opacity-50'
-                        : ''
-                    }`}
-                    onClick={() => setSelectedToken(token)}
-                  >
-                    <img
-                      className="mr-2 size-6"
-                      src={structuredTokenData[token].logoURI}
-                      alt={structuredTokenData[token].symbol}
-                    />
-                    <div className="flex flex-col text-xs">
-                      <div className="font-medium">
-                        {structuredTokenData[token].symbol}
-                      </div>
-                      <div className="font-light">
-                        {formatBalance(
-                          structuredTokenData[token].total,
-                          structuredTokenData[token].decimals
-                        )}
-                      </div>
-                    </div>
-                  </div>
+                    id={token}
+                    logoURI={structuredTokenData[token].logoURI}
+                    symbol={structuredTokenData[token].symbol}
+                    isSelected={selectedToken === token}
+                    amount={structuredTokenData[token].total}
+                    decimals={structuredTokenData[token].decimals}
+                    onSelect={setSelectedToken}
+                    withSymbol={false}
+                    name={structuredTokenData[token].symbol}
+                    isDisabled={structuredTokenData[token].total === '0'}
+                  />
                 ))}
               </div>
               <div className="grid w-full items-center gap-1.5 pt-6">
-                <Label className="text-sm" htmlFor="amount">
+                <Label className="text-sm font-normal" htmlFor="amount">
                   Amount
                 </Label>
                 <div className="flex h-20 items-center rounded-3xl border p-2">
@@ -190,6 +183,33 @@ export const SendModal = ({ onOpenChange, open }: Props) => {
                     MAX
                   </div>
                 </div>
+              </div>
+              <div className="pt-6 text-sm">Destination Chain</div>
+              <div className="grid grid-cols-3 gap-4">
+                {chains.map(({ chainID, logoURI, name }) => {
+                  const amountChains = structuredTokenData[
+                    selectedToken
+                  ].chainBalances?.find(
+                    ({ chain }) => chain.chainID === chainID
+                  )?.balance
+
+                  return (
+                    <ElementSelect
+                      key={chainID}
+                      id={chainID.toString()}
+                      logoURI={logoURI}
+                      symbol={structuredTokenData[selectedToken].symbol}
+                      decimals={structuredTokenData[selectedToken].decimals}
+                      name={name}
+                      amount={amountChains ?? '0'}
+                      withSymbol={true}
+                      isSelected={
+                        selectedDestinationChain === chainID.toString()
+                      }
+                      onSelect={setSelectedDestinationChain}
+                    />
+                  )
+                })}
               </div>
               {solutionError && (
                 <div className="pt-6">
