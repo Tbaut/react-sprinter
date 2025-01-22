@@ -12,6 +12,7 @@ import {
   priceToBigInt,
   useCoinPrice
 } from './hooks/useCoinPrice'
+import CountUp from 'react-countup'
 
 export const Portofolio = () => {
   const [sweepModalOpen, setSweepModalOpen] = useState(false)
@@ -42,7 +43,9 @@ export const Portofolio = () => {
   return (
     <div className="mt-12 w-full px-48">
       <div className="text-lg">Balance:</div>
-      <div className="text-4xl font-semibold">${amountUSD}</div>
+      <div className="text-4xl font-semibold">
+        $<CountUp end={Number(amountUSD.toString())} />
+      </div>
       <div className="mb-14 mt-8 h-px w-full bg-separator-gradient"></div>
       <div className="pb-8 pr-2">
         <div className="grid grid-cols-4 gap-4">
