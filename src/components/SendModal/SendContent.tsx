@@ -5,12 +5,16 @@ import { Button } from '../ui/button'
 import { Solution } from '@chainsafe/sprinter-sdk/dist/types'
 import { useCallback, useMemo, useState } from 'react'
 import { formatBalance } from '@/utils'
-import {
-  useAccount,
-  useSendTransaction,
-  useSwitchChain,
-  usePublicClient
-} from 'wagmi'
+import { useAppKitNetwork } from '@reown/appkit/react'
+import { useEthers } from '@/context/EthersContext'
+import { ethers } from 'ethers'
+
+// import {
+//   useAccount,
+//   useSendTransaction,
+//   useSwitchChain,
+//   usePublicClient
+// } from 'wagmi'
 
 // // @ts-expect-error   // chainId is missing in web3js call options type
 // const callOptions: NonPayableCallOptions = { chainId: quoteRecord.sourceChain };
@@ -65,12 +69,10 @@ type Props = {
 // approvals?: Transaction[];
 
 export const SendContent = ({ solutions, token }: Props) => {
-  const { chainId: currentChainId } = useAccount()
-  const { sendTransactionAsync } = useSendTransaction()
+  const { chainId: currentChainId } = useAppKitNetwork()
+  const { ethersProvider, signer } = useEthers()
   const [isLoading, setIsLoading] = useState(false)
   const { structuredTokenData, chains } = useChainTokens()
-  const { switchChainAsync } = useSwitchChain()
-  const publicClient = usePublicClient()
   const sourceChains = useMemo(() => {
     const sourceChainIds = solutions.map((s) => s.sourceChain)
     return chains.filter((chain) => sourceChainIds.includes(chain.chainID))
@@ -98,10 +100,17 @@ export const SendContent = ({ solutions, token }: Props) => {
   }, [solutions])
 
   const onConfirm = useCallback(async () => {
+    if (!signer || !ethersProvider) return
+
     setIsLoading(true)
     for (const solution of solutions) {
       if (currentChainId !== solution.sourceChain) {
-        await switchChainAsync({ chainId: solution.sourceChain })
+        const bigIntChainId = BigInt(solution.sourceChain)
+        await ethersProvider.send('wallet_switchEthereumChain', [
+          {
+            chainId: `0x${bigIntChainId.toString(16)}`
+          }
+        ])
       }
 
       if (solution.approvals && solution.approvals.length > 0) {
@@ -109,40 +118,44 @@ export const SendContent = ({ solutions, token }: Props) => {
           console.log('Requesting approval:', approval)
 
           const { to, gasLimit, data, from, chainId, value } = approval
-          const receipt = await sendTransactionAsync({
-            to,
-            gas: BigInt(gasLimit),
-            data: data as `0x${string}`,
-            account: from,
-            chainId,
-            value: BigInt(value)
-          })
-          console.log(`Approval receipt: `, receipt)
+          signer
+            .sendTransaction({
+              to,
+              gasLimit: BigInt(gasLimit),
+              data: data as `0x${string}`,
+              from,
+              chainId,
+              value: BigInt(value)
+            })
+            .then(async (receipt) => await receipt.wait())
+            .catch(console.error)
         }
       }
 
       console.log('Sending tx:', solution)
 
       const { to, gasLimit, data, from, value, chainId } = solution.transaction
-      const receipt = await sendTransactionAsync({
-        to,
-        gas: BigInt(gasLimit),
-        data: data as `0x${string}`,
-        account: from,
-        chainId,
-        value: BigInt(value)
-      })
-      console.warn(`Approval receipt: `, receipt)
-      await publicClient?.waitForTransactionReceipt({ hash: receipt })
+      signer
+        .sendTransaction({
+          to,
+          gasLimit: BigInt(gasLimit),
+          data: data as `0x${string}`,
+          from,
+          chainId,
+          value: BigInt(value)
+        })
+        .then(async (receipt) => {
+          console.log('now waiting', receipt.blockHash)
+          await receipt.wait()
+        })
+        .catch(console.error)
+        .finally(() => {
+          setIsLoading(false)
+        })
+
+      console.log('Waiting done')
     }
-    setIsLoading(false)
-  }, [
-    currentChainId,
-    publicClient,
-    sendTransactionAsync,
-    solutions,
-    switchChainAsync
-  ])
+  }, [currentChainId, ethersProvider, signer, solutions])
 
   return (
     <div>
@@ -195,7 +208,7 @@ export const SendContent = ({ solutions, token }: Props) => {
       <div className="pt-6">
         <Button
           onClick={() => {
-            onConfirm().catch(console.error)
+            onConfirm().catch((e) => console.error('Error in onConfirm:', e))
           }}
           className="w-full"
           variant="secondary"

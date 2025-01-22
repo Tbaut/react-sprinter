@@ -1,4 +1,4 @@
-import { formatUnits } from 'viem'
+import { formatUnits } from 'ethers'
 
 export function formatBalance(
   amount: string,
