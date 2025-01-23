@@ -17,8 +17,14 @@ export const Chains = ({ tokenId }: Params) => {
     () => structuredTokenData[tokenId].chainBalances ?? [],
     [structuredTokenData, tokenId]
   )
-  const tokenDecimals = useMemo(() => structuredTokenData[tokenId].decimals, [])
-  const tokenSymbol = useMemo(() => structuredTokenData[tokenId].symbol, [])
+  const tokenDecimals = useMemo(
+    () => structuredTokenData[tokenId].decimals,
+    [structuredTokenData, tokenId]
+  )
+  const tokenSymbol = useMemo(
+    () => structuredTokenData[tokenId].symbol,
+    [structuredTokenData, tokenId]
+  )
 
   return (
     <div className="flex items-center">

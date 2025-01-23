@@ -14,6 +14,7 @@ import { parseUnits } from 'ethers'
 import { SendContent } from './SendContent'
 import { isSupportedToken, useCoinPrice } from '@/hooks/useCoinPrice'
 import { ElementSelect } from '../ElementSelect'
+import { CircleCheck } from 'lucide-react'
 
 type Props = {
   onOpenChange: (open: boolean) => void
@@ -55,7 +56,9 @@ export const SendModal = ({ onOpenChange, open }: Props) => {
     () => Object.keys(structuredTokenData),
     [structuredTokenData]
   )
-  const [step, setStep] = useState<'getQuotes' | 'send'>('getQuotes')
+  const [step, setStep] = useState<'getQuotes' | 'send' | 'success'>(
+    'getQuotes'
+  )
 
   useEffect(() => {
     if (!selectedToken) {
@@ -236,6 +239,7 @@ export const SendModal = ({ onOpenChange, open }: Props) => {
               <SendContent
                 solutions={receivedSolutions}
                 token={selectedToken}
+                onSuccess={() => setStep('success')}
               />
               <div className="mt-4 text-center">
                 <span
@@ -244,6 +248,25 @@ export const SendModal = ({ onOpenChange, open }: Props) => {
                 >
                   Go Back
                 </span>
+              </div>
+            </>
+          )}
+          {step === 'success' && (
+            <>
+              <div className="">
+                <div className="flex flex-col items-center justify-center pt-6">
+                  <CircleCheck className="text-6xl text-green-500" size={64} />
+                  All done!
+                </div>
+              </div>
+              <div className="pt-6">
+                <Button
+                  onClick={() => onOpenChange(false)}
+                  className="w-full"
+                  variant="secondary"
+                >
+                  Close
+                </Button>
               </div>
             </>
           )}

@@ -14,8 +14,8 @@
     "typecheck": "tsc --project tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@chainsafe/sprinter-react": "^1.1.2",
-    "@chainsafe/sprinter-sdk": "^1.1.2",
+    "@chainsafe/sprinter-react": "^1.2.3",
+    "@chainsafe/sprinter-sdk": "^1.2.3",
     "@radix-ui/react-dialog": "^1.1.4",
     "@radix-ui/react-hover-card": "^1.1.4",
     "@radix-ui/react-label": "^2.1.1",
@@ -31,6 +31,7 @@
     "cmdk": "1.0.0",
     "date-fns": "^4.1.0",
     "ethers": "^6.13.5",
+    "globals": "^15.14.0",
     "lucide-react": "^0.469.0",
     "react": "^19.0.0",
     "react-countup": "^6.5.3",

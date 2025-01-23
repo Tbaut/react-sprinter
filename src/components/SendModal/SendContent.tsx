@@ -7,7 +7,6 @@ import { useCallback, useMemo, useState } from 'react'
 import { formatBalance } from '@/utils'
 import { useAppKitNetwork } from '@reown/appkit/react'
 import { useEthers } from '@/context/EthersContext'
-import { ethers } from 'ethers'
 
 // import {
 //   useAccount,
@@ -53,22 +52,10 @@ import { ethers } from 'ethers'
 type Props = {
   solutions: Solution[]
   token: string
+  onSuccess: () => void
 }
 
-// destinationChain: ChainID;
-// destinationTokenAddress: Address;
-// duration: number;
-// fee: Amount;
-// gasCost: Amount;
-// senderAddress: Address;
-// sourceChain: ChainID;
-// sourceTokenAddress: Address;
-// amount: string;
-// tool: Tool;
-// transaction: Transaction;
-// approvals?: Transaction[];
-
-export const SendContent = ({ solutions, token }: Props) => {
+export const SendContent = ({ solutions, token, onSuccess }: Props) => {
   const { chainId: currentChainId } = useAppKitNetwork()
   const { ethersProvider, signer } = useEthers()
   const [isLoading, setIsLoading] = useState(false)
@@ -147,15 +134,14 @@ export const SendContent = ({ solutions, token }: Props) => {
         .then(async (receipt) => {
           console.log('now waiting', receipt.blockHash)
           await receipt.wait()
+          onSuccess()
         })
         .catch(console.error)
         .finally(() => {
           setIsLoading(false)
         })
-
-      console.log('Waiting done')
     }
-  }, [currentChainId, ethersProvider, signer, solutions])
+  }, [currentChainId, ethersProvider, onSuccess, signer, solutions])
 
   return (
     <div>
