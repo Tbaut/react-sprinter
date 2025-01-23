@@ -47,10 +47,12 @@ createAppKit({
   }
 })
 
+export const BASE_URL = Environment.TESTNET
+
 function App() {
   return (
     <EthersContextProvider>
-      <SprinterContext baseUrl={Environment.TESTNET}>
+      <SprinterContext baseUrl={BASE_URL}>
         <ChainTokensContextProvider>
           <div className="h-screen bg-radial-gradient bg-right-bottom bg-no-repeat">
             <Header />

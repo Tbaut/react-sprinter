@@ -12,7 +12,7 @@ import { useAppKitAccount } from '@reown/appkit/react'
 import { Solution } from '@chainsafe/sprinter-sdk'
 import { parseUnits } from 'ethers'
 import { SendContent } from './SendContent'
-import { isSupportedToken, useCoinPrice } from '@/hooks/useCoinPrice'
+import { useCoinPrice } from '@/hooks/useCoinPrice'
 import { ElementSelect } from '../ElementSelect'
 import { CircleCheck } from 'lucide-react'
 
@@ -41,16 +41,10 @@ export const SendModal = ({ onOpenChange, open }: Props) => {
   const [receivedSolutions, setReceivedsolutions] = useState<Solution[] | null>(
     null
   )
-  const { prices } = useCoinPrice()
+  const { getUsdPrice } = useCoinPrice()
   const amountUSD = useMemo(() => {
-    if (!prices || !selectedToken || !isSupportedToken(selectedToken)) return 0
-    const amountNumber = Number(amount) || 0
-
-    const price = prices[selectedToken].price ?? 0
-
-    const roundedPrice = Math.round(Number(price))
-    return (amountNumber * roundedPrice).toFixed(2)
-  }, [amount, prices, selectedToken])
+    return getUsdPrice(selectedToken, amount)
+  }, [amount, getUsdPrice, selectedToken])
 
   const possibleSendingTokens = useMemo(
     () => Object.keys(structuredTokenData),

@@ -3,8 +3,10 @@ import { DialogHeader, Dialog, DialogContent, DialogTitle } from './ui/dialog'
 import sweep from '../assets/sweep.svg'
 import { useTokens } from '@/hooks/useTokens'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { StructuredTokenData } from '@/context/ChainTokensContext'
-import { useSprinterTransfers } from '@chainsafe/sprinter-react'
+import {
+  StructuredTokenData,
+  useChainTokens
+} from '@/context/ChainTokensContext'
 import { ElementSelect } from './ElementSelect'
 import { Button } from './ui/button'
 import { formatBalance } from '@/utils'
@@ -13,7 +15,10 @@ import {
   priceToBigInt,
   useCoinPrice
 } from '@/hooks/useCoinPrice'
-import { useAppKitAccount } from '@reown/appkit/react'
+import { useAppKitAccount, useAppKitNetwork } from '@reown/appkit/react'
+import { Solution, Sprinter } from '@chainsafe/sprinter-sdk'
+import { BASE_URL } from '@/App'
+import { useEthers } from '@/context/EthersContext'
 
 type Props = {
   onOpenChange: (open: boolean) => void
@@ -28,11 +33,21 @@ export const SweepModal = ({
   tokenId,
   structuredTokenData
 }: Props) => {
+  const { chainId: currentChainId } = useAppKitNetwork()
+  const { ethersProvider, signer } = useEthers()
+  const { chains } = useChainTokens()
+  const sprinter = useMemo(() => new Sprinter({ baseUrl: BASE_URL }), [])
   const { address } = useAppKitAccount()
-  const { getSweep } = useSprinterTransfers()
+  const [sweepingSolution, setSweepingSolution] = useState<
+    Solution[] | undefined
+  >()
+  const [sweepError, setSweepError] = useState<string | undefined>()
+  const [sweepLoading, setSweepLoading] = useState(false)
   const { tokens } = useTokens()
   const { prices } = useCoinPrice()
-  const [selectedChains, setSelectedChains] = useState<string[]>([])
+  const [selectedSourceChains, setSelectedSourceChains] = useState<string[]>([])
+  const [destinationChain, setDestinationChain] = useState<number | undefined>()
+
   const selectedToken = useMemo(() => {
     return tokens.find((token) => token.symbol === tokenId)
   }, [tokenId, tokens])
@@ -41,13 +56,13 @@ export const SweepModal = ({
 
     let res = 0n
     structuredTokenData[tokenId].chainBalances
-      .filter((c) => selectedChains.includes(c.chain.chainID.toString()))
+      .filter((c) => selectedSourceChains.includes(c.chain.chainID.toString()))
       .forEach((c) => {
         res += BigInt(c.balance)
       })
 
     return res
-  }, [selectedChains, structuredTokenData, tokenId])
+  }, [selectedSourceChains, structuredTokenData, tokenId])
 
   const totalAmountUSD = useMemo(() => {
     if (totalAmount === 0n || !tokenId || !prices || !selectedToken) return 0
@@ -68,28 +83,111 @@ export const SweepModal = ({
   )
 
   useEffect(() => {
-    setSelectedChains(
+    if (!selectedToken || !address || !tokenId || !destinationChain) return
+
+    setSweepError(undefined)
+    setSweepingSolution(undefined)
+    setSweepLoading(true)
+
+    sprinter
+      .sweep({
+        account: address,
+        destinationChain: destinationChain,
+        token: tokenId,
+        sourceChains: selectedSourceChains.map((c) => Number(c))
+      })
+      .then((res) => {
+        if (Array.isArray(res)) {
+          setSweepingSolution(res)
+        } else {
+          setSweepError(res.error)
+        }
+      })
+      .catch(console.error)
+      .finally(() => setSweepLoading(false))
+  }, [
+    address,
+    destinationChain,
+    possibleSweepingChains,
+    selectedSourceChains,
+    selectedToken,
+    sprinter,
+    tokenId
+  ])
+
+  useEffect(() => {
+    setSelectedSourceChains(
       possibleSweepingChains?.map((c) => c.chainID.toString()) ?? []
     )
   }, [possibleSweepingChains])
 
-  const onSweep = useCallback(() => {
-    if (!selectedToken || !address || !tokenId) return
+  const onSweep = useCallback(async () => {
+    if (!sweepingSolution || sweepingSolution.length === 0) {
+      console.error('No sweep solution')
+      return
+    }
 
-    getSweep({
-      account: address,
-      destinationChain: Number(selectedChains[0]),
-      token: tokenId,
-      sourceChains: possibleSweepingChains?.map((c) => c.chainID) ?? undefined
-    })
-  }, [
-    selectedToken,
-    address,
-    tokenId,
-    getSweep,
-    selectedChains,
-    possibleSweepingChains
-  ])
+    if (!signer || !ethersProvider) return
+
+    setSweepLoading(true)
+    for (const solution of sweepingSolution) {
+      if (currentChainId !== solution.sourceChain) {
+        const bigIntChainId = BigInt(solution.sourceChain)
+        await ethersProvider.send('wallet_switchEthereumChain', [
+          {
+            chainId: `0x${bigIntChainId.toString(16)}`
+          }
+        ])
+      }
+
+      if (solution.approvals && solution.approvals.length > 0) {
+        for (const approval of solution.approvals) {
+          console.log('Requesting approval:', approval)
+
+          const { to, gasLimit, data, from, chainId, value } = approval
+          signer
+            .sendTransaction({
+              to,
+              gasLimit: BigInt(gasLimit),
+              data: data as `0x${string}`,
+              from,
+              chainId,
+              value: BigInt(value)
+            })
+            .then(async (receipt) => await receipt.wait())
+            .catch(console.error)
+        }
+      }
+
+      console.log('Sending tx:', solution)
+
+      const { to, gasLimit, data, from, value, chainId } = solution.transaction
+      signer
+        .sendTransaction({
+          to,
+          gasLimit: BigInt(gasLimit),
+          data: data as `0x${string}`,
+          from,
+          chainId,
+          value: BigInt(value)
+        })
+        .then(async (receipt) => {
+          console.log('now waiting', receipt.blockHash)
+          await receipt.wait()
+          // onSuccess()
+        })
+        .catch(console.error)
+        .finally(() => {
+          setSweepLoading(false)
+        })
+    }
+  }, [currentChainId, ethersProvider, signer, sweepingSolution])
+
+  useEffect(() => {
+    if (selectedSourceChains.length === 0) {
+      setSweepError('No chains selected source chain')
+    }
+  }, [selectedSourceChains.length, sweepError])
 
   if (!selectedToken) return
 
@@ -124,14 +222,18 @@ export const SweepModal = ({
                   key={chain.chainID}
                   id={chain.chainID.toString()}
                   logoURI={chain.logoURI}
-                  isSelected={selectedChains.includes(chain.chainID.toString())}
+                  isSelected={selectedSourceChains.includes(
+                    chain.chainID.toString()
+                  )}
                   amount={amount}
                   decimals={selectedToken.decimals}
                   onSelect={(id) => {
-                    if (selectedChains.includes(id)) {
-                      setSelectedChains((prev) => prev.filter((c) => c !== id))
+                    if (selectedSourceChains.includes(id)) {
+                      setSelectedSourceChains((prev) =>
+                        prev.filter((c) => c !== id)
+                      )
                     } else {
-                      setSelectedChains((prev) => [...prev, id])
+                      setSelectedSourceChains((prev) => [...prev, id])
                     }
                   }}
                   symbol={selectedToken.symbol}
@@ -157,8 +259,39 @@ export const SweepModal = ({
               </div>
             </div>
           </div>
+          <div className="text-sm font-normal">Destination Chain</div>
+          <div className="grid grid-cols-3 gap-4">
+            {chains?.map((chain) => {
+              return (
+                <ElementSelect
+                  key={chain.chainID}
+                  id={chain.chainID.toString()}
+                  logoURI={chain.logoURI}
+                  isSelected={destinationChain === chain.chainID}
+                  onSelect={(id) => {
+                    setDestinationChain(Number(id))
+                  }}
+                  withSymbol={false}
+                  name={chain.name}
+                />
+              )
+            })}
+          </div>
+          {sweepError && (
+            <div className="pt-6">
+              <div className="text-sm text-red-500">Error: {sweepError}</div>
+            </div>
+          )}
           <div className="pt-6">
-            <Button onClick={onSweep} className="w-full" variant="secondary">
+            <Button
+              onClick={() => {
+                onSweep().catch(console.error)
+              }}
+              className="w-full"
+              variant="secondary"
+              disabled={sweepLoading || !sweepingSolution || !!sweepError}
+              loading={sweepLoading}
+            >
               Sweep
             </Button>
           </div>

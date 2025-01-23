@@ -3,11 +3,11 @@ import { formatBalance } from '@/utils'
 type Props = {
   id: string
   logoURI: string
-  symbol: string
+  symbol?: string
   isSelected: boolean
-  amount: string
+  amount?: string
   onSelect: (id: string) => void
-  decimals: number
+  decimals?: number
   name: string
   withSymbol: boolean
   isDisabled?: boolean
@@ -36,9 +36,12 @@ export const ElementSelect = ({
         <div className="w-full overflow-hidden text-ellipsis font-medium">
           {name}
         </div>
-        <div className="w-full overflow-hidden text-ellipsis font-light">
-          {formatBalance(amount, decimals, 2)} {withSymbol ? symbol : ''}
-        </div>
+        {!!amount && !!decimals && (
+          <div className="w-full overflow-hidden text-ellipsis font-light">
+            {formatBalance(amount, decimals, 2)}{' '}
+            {withSymbol && symbol ? symbol : ''}
+          </div>
+        )}
       </div>
     </div>
   )

@@ -30,6 +30,22 @@ export const useCoinPrice = () => {
     return (await response.json()) as unknown as PriceInfo
   }, [])
 
+  const getUsdPrice = useCallback(
+    (tokenId: string, amount: number | string) => {
+      if (!prices || !tokenId) return '0'
+      if (!isSupportedToken(tokenId)) {
+        console.error(`getUsdPrice error: tokenId "${tokenId}" not supported.`)
+        return '0'
+      }
+
+      const price = prices[tokenId].price ?? 0
+
+      const roundedPrice = Math.round(Number(price))
+      return (Number(amount) * roundedPrice).toFixed(2)
+    },
+    [prices]
+  )
+
   useEffect(() => {
     fetchCoinPrice()
       .then(({ data }) => {
@@ -38,5 +54,5 @@ export const useCoinPrice = () => {
       .catch(console.error)
   }, [fetchCoinPrice])
 
-  return { prices }
+  return { prices, getUsdPrice }
 }
