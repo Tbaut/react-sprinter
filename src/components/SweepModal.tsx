@@ -19,6 +19,7 @@ import { useAppKitAccount, useAppKitNetwork } from '@reown/appkit/react'
 import { Solution, Sprinter } from '@chainsafe/sprinter-sdk'
 import { BASE_URL } from '@/App'
 import { useEthers } from '@/context/EthersContext'
+import { CircleCheck } from 'lucide-react'
 
 type Props = {
   onOpenChange: (open: boolean) => void
@@ -33,6 +34,7 @@ export const SweepModal = ({
   tokenId,
   structuredTokenData
 }: Props) => {
+  const [isDone, setIsDone] = useState(false)
   const { chainId: currentChainId } = useAppKitNetwork()
   const { ethersProvider, signer } = useEthers()
   const { chains } = useChainTokens()
@@ -81,6 +83,12 @@ export const SweepModal = ({
         : [],
     [structuredTokenData, tokenId]
   )
+
+  useEffect(() => {
+    if (!destinationChain) {
+      setDestinationChain(chains[0].chainID)
+    }
+  }, [chains, destinationChain, possibleSweepingChains])
 
   useEffect(() => {
     if (!selectedToken || !address || !tokenId || !destinationChain) return
@@ -145,7 +153,7 @@ export const SweepModal = ({
           console.log('Requesting approval:', approval)
 
           const { to, gasLimit, data, from, chainId, value } = approval
-          signer
+          await signer
             .sendTransaction({
               to,
               gasLimit: BigInt(gasLimit),
@@ -154,7 +162,10 @@ export const SweepModal = ({
               chainId,
               value: BigInt(value)
             })
-            .then(async (receipt) => await receipt.wait())
+            .then(async (receipt) => {
+              console.log('now waiting for approval', receipt.blockHash)
+              await receipt.wait()
+            })
             .catch(console.error)
         }
       }
@@ -172,9 +183,9 @@ export const SweepModal = ({
           value: BigInt(value)
         })
         .then(async (receipt) => {
-          console.log('now waiting', receipt.blockHash)
           await receipt.wait()
-          // onSuccess()
+          console.log('now waiting', receipt.blockHash)
+          setIsDone(true)
         })
         .catch(console.error)
         .finally(() => {
@@ -185,7 +196,7 @@ export const SweepModal = ({
 
   useEffect(() => {
     if (selectedSourceChains.length === 0) {
-      setSweepError('No chains selected source chain')
+      setSweepError('You must select at least one source chain')
     }
   }, [selectedSourceChains.length, sweepError])
 
@@ -201,100 +212,125 @@ export const SweepModal = ({
             </div>
             Sweep balance
           </DialogTitle>
-          <div className="text-sm font-normal">Token</div>
-          <div className="flex h-12 items-center">
-            <img
-              className="mr-2 w-6"
-              src={selectedToken.logoURI}
-              alt={selectedToken.symbol}
-            />
-            {selectedToken.symbol}
-          </div>
-          <div className="text-sm font-normal">Sweeping from</div>
-          <div className="grid grid-cols-3 gap-4">
-            {possibleSweepingChains?.map((chain) => {
-              const amount =
-                structuredTokenData[selectedToken.symbol].chainBalances?.find(
-                  (c) => c.chain.chainID === chain.chainID
-                )?.balance ?? '0'
-              return (
-                <ElementSelect
-                  key={chain.chainID}
-                  id={chain.chainID.toString()}
-                  logoURI={chain.logoURI}
-                  isSelected={selectedSourceChains.includes(
-                    chain.chainID.toString()
-                  )}
-                  amount={amount}
-                  decimals={selectedToken.decimals}
-                  onSelect={(id) => {
-                    if (selectedSourceChains.includes(id)) {
-                      setSelectedSourceChains((prev) =>
-                        prev.filter((c) => c !== id)
-                      )
-                    } else {
-                      setSelectedSourceChains((prev) => [...prev, id])
-                    }
-                  }}
-                  symbol={selectedToken.symbol}
-                  withSymbol={true}
-                  name={chain.name}
+          {isDone && (
+            <>
+              <div className="">
+                <div className="flex flex-col items-center justify-center pt-6">
+                  <CircleCheck className="text-6xl text-green-500" size={64} />
+                  All done!
+                </div>
+              </div>
+              <div className="pt-6">
+                <Button
+                  onClick={() => onOpenChange(false)}
+                  className="w-full"
+                  variant="secondary"
+                >
+                  Close
+                </Button>
+              </div>
+            </>
+          )}
+          {!isDone && (
+            <>
+              <div className="pt-4 text-sm font-normal">Token</div>
+              <div className="flex items-center">
+                <img
+                  className="mr-2 w-6"
+                  src={selectedToken.logoURI}
+                  alt={selectedToken.symbol}
                 />
-              )
-            })}
-          </div>
-          <div className="flex justify-between pt-6">
-            <div className="text-sm font-normal">Total amount</div>
-            <div className="flex flex-col">
-              <div className="text-right text-sm font-normal">
-                {formatBalance(
-                  totalAmount.toString(),
-                  selectedToken.decimals,
-                  2
-                )}{' '}
                 {selectedToken.symbol}
               </div>
-              <div className="text-right text-sm font-light text-gray-500">
-                ${totalAmountUSD} USD
+              <div className="pt-6 text-sm font-normal">Sweeping from</div>
+              <div className="grid grid-cols-3 gap-4">
+                {possibleSweepingChains?.map((chain) => {
+                  const amount =
+                    structuredTokenData[
+                      selectedToken.symbol
+                    ].chainBalances?.find(
+                      (c) => c.chain.chainID === chain.chainID
+                    )?.balance ?? '0'
+                  return (
+                    <ElementSelect
+                      key={chain.chainID}
+                      id={chain.chainID.toString()}
+                      logoURI={chain.logoURI}
+                      isSelected={selectedSourceChains.includes(
+                        chain.chainID.toString()
+                      )}
+                      amount={amount}
+                      decimals={selectedToken.decimals}
+                      onSelect={(id) => {
+                        if (selectedSourceChains.includes(id)) {
+                          setSelectedSourceChains((prev) =>
+                            prev.filter((c) => c !== id)
+                          )
+                        } else {
+                          setSelectedSourceChains((prev) => [...prev, id])
+                        }
+                      }}
+                      symbol={selectedToken.symbol}
+                      withSymbol={true}
+                      name={chain.name}
+                    />
+                  )
+                })}
               </div>
-            </div>
-          </div>
-          <div className="text-sm font-normal">Destination Chain</div>
-          <div className="grid grid-cols-3 gap-4">
-            {chains?.map((chain) => {
-              return (
-                <ElementSelect
-                  key={chain.chainID}
-                  id={chain.chainID.toString()}
-                  logoURI={chain.logoURI}
-                  isSelected={destinationChain === chain.chainID}
-                  onSelect={(id) => {
-                    setDestinationChain(Number(id))
+              <div className="flex justify-between pt-6">
+                <div className="text-sm font-normal">Total amount</div>
+                <div className="flex flex-col">
+                  <div className="text-right text-sm font-normal">
+                    {formatBalance(
+                      totalAmount.toString(),
+                      selectedToken.decimals,
+                      2
+                    )}{' '}
+                    {selectedToken.symbol}
+                  </div>
+                  <div className="text-right text-sm font-light text-gray-500">
+                    ${totalAmountUSD} USD
+                  </div>
+                </div>
+              </div>
+              <div className="text-sm font-normal">Destination Chain</div>
+              <div className="grid grid-cols-3 gap-4">
+                {chains?.map((chain) => {
+                  return (
+                    <ElementSelect
+                      key={chain.chainID}
+                      id={chain.chainID.toString()}
+                      logoURI={chain.logoURI}
+                      isSelected={destinationChain === chain.chainID}
+                      onSelect={(id) => {
+                        setDestinationChain(Number(id))
+                      }}
+                      withSymbol={false}
+                      name={chain.name}
+                    />
+                  )
+                })}
+              </div>
+              {sweepError && (
+                <div className="pt-6">
+                  <div className="text-sm text-red-500">{sweepError}</div>
+                </div>
+              )}
+              <div className="pt-6">
+                <Button
+                  onClick={() => {
+                    onSweep().catch(console.error)
                   }}
-                  withSymbol={false}
-                  name={chain.name}
-                />
-              )
-            })}
-          </div>
-          {sweepError && (
-            <div className="pt-6">
-              <div className="text-sm text-red-500">Error: {sweepError}</div>
-            </div>
+                  className="w-full"
+                  variant="secondary"
+                  disabled={sweepLoading || !sweepingSolution || !!sweepError}
+                  loading={sweepLoading}
+                >
+                  Sweep
+                </Button>
+              </div>
+            </>
           )}
-          <div className="pt-6">
-            <Button
-              onClick={() => {
-                onSweep().catch(console.error)
-              }}
-              className="w-full"
-              variant="secondary"
-              disabled={sweepLoading || !sweepingSolution || !!sweepError}
-              loading={sweepLoading}
-            >
-              Sweep
-            </Button>
-          </div>
         </DialogHeader>
       </DialogContent>
     </Dialog>
